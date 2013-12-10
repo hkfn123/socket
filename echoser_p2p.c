@@ -13,7 +13,14 @@
 		perror(m);\
 		exit(EXIT_FAILURE);\
 	}while(0)
-void do_service(int conn);
+
+void do_service(int accept_conn,pid_t pid);
+void handler(int sig)
+{
+	printf("recv a sig=%d\n",sig);
+	exit(EXIT_SUCCESS);
+}
+
 int main(int argc,char* argv[])
 {
 	signal(SIGCHLD,SIG_IGN);
@@ -50,24 +57,33 @@ int main(int argc,char* argv[])
 		if((accept_conn = accept(sockfd,(struct sockaddr*)&cliaddr,&cliaddr_len)) < 0)
 		ERR_EXIT("accept() error.");
 		printf("recived connect ip:%s port:%d\n",inet_ntoa(cliaddr.sin_addr),ntohs(cliaddr.sin_port));
+	
 		pid = fork();
-
 		if(pid == -1)
 			ERR_EXIT("fork error");
-		if(pid == 0)
+		else if(pid == 0)
 		{
-			close(sockfd);
-			do_service(accept_conn);
+			signal(SIGUSR1,handler);
+			do_service(accept_conn,pid);
+		}
+		else
+		{
+			char sendbuf[1024] = {0};
+			while(fgets(sendbuf,sizeof(sendbuf),stdin) != NULL)
+			{
+				write(accept_conn,sendbuf,sizeof(sendbuf));
+				memset(sendbuf,0,sizeof(sendbuf));
+			}
+
+			kill(pid,SIGUSR1);
 			exit(EXIT_SUCCESS);
 		}
 	}
-	close(accept_conn);
-	close(sockfd);
 
 	return 0;
 }
 
-void do_service(int accept_conn)
+void do_service(int accept_conn,pid_t pid)
 {
 	char recvbuf[1024];
 	while(1)
@@ -82,6 +98,6 @@ void do_service(int accept_conn)
 		else if(ret == -1)
 			ERR_EXIT("read error");
 		fputs(recvbuf,stdout);
-		write(accept_conn,recvbuf,ret);
 	}
+	exit(EXIT_SUCCESS);
 }
