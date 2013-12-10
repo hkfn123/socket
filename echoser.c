@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <errno.h>
 #include <string.h>
+#include <signal.h>
 
 #define ERR_EXIT(m) \
 	do{\
@@ -15,7 +16,7 @@
 
 int main(int argc,char* argv[])
 {
-
+	signal(SIGCHLD,SIG_IGN);
 	int sockfd = 0;
 	
 	if((sockfd = socket(AF_INET,SOCK_STREAM,0)) < 0)
