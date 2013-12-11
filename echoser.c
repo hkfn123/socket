@@ -13,7 +13,9 @@
 		perror(m);\
 		exit(EXIT_FAILURE);\
 	}while(0)
+
 void do_service(int conn);
+
 int main(int argc,char* argv[])
 {
 	signal(SIGCHLD,SIG_IGN);
@@ -48,7 +50,7 @@ int main(int argc,char* argv[])
 	while(1)
 	{
 		if((accept_conn = accept(sockfd,(struct sockaddr*)&cliaddr,&cliaddr_len)) < 0)
-		ERR_EXIT("accept() error.");
+			ERR_EXIT("accept() error.");
 		printf("recived connect ip:%s port:%d\n",inet_ntoa(cliaddr.sin_addr),ntohs(cliaddr.sin_port));
 		pid = fork();
 

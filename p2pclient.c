@@ -30,19 +30,37 @@ int main(int argc,char* argv[])
 	if(connect(sockfd,(struct sockaddr*)&servaddr,sizeof(servaddr)) < 0)
 		ERR_EXIT("connect() error.");
 
-	char sendbuf[1024] = {0};
-	char recvbuf[1024] = {0};
-	while(fgets(sendbuf,sizeof(sendbuf),stdin) != NULL)
+	pid_t pid;
+	pid = fork();
+	if(pid == -1)
+		ERR_EXIT("fork error.");
+	if(pid == 0)
 	{
-		write(sockfd,sendbuf,strlen(sendbuf));
-		read(sockfd,recvbuf,sizeof(recvbuf));
-
-		fputs(recvbuf,stdout);
-		
-		memset(sendbuf,0,sizeof(sendbuf));
-		memset(recvbuf,0,sizeof(recvbuf));
+		char sendbuf[1024] = {0};
+		while(fgets(sendbuf,sizeof(sendbuf),stdin) != NULL)
+		{
+			write(sockfd,sendbuf,strlen(sendbuf));
+			memset(sendbuf,0,sizeof(sendbuf));
+		}
 	}
-	close(sockfd);
+	else
+	{
+		while(1)
+		{
+			char recvbuf[1024] = {0};
+			int ret = read(sockfd,recvbuf,sizeof(recvbuf));
+			if(ret == 0)
+			{
+				printf("close by server.\n");
+				break;
+			}else if(ret == -1){
+				printf("read error.\n");
+			}else{
+				fputs(recvbuf,stdout);
+			}
+		}
+		close(sockfd);
+	}
 
 	return 0;
 }

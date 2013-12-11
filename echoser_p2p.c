@@ -51,13 +51,14 @@ int main(int argc,char* argv[])
 	socklen_t cliaddr_len = sizeof(cliaddr);
 	int accept_conn = 0;
 	
+	if((accept_conn = accept(sockfd,(struct sockaddr*)&cliaddr,&cliaddr_len)) < 0)
+		ERR_EXIT("accept() error.");
+		printf("recived connect ip:%s port:%d\n",inet_ntoa(cliaddr.sin_addr),ntohs(cliaddr.sin_port));
+
+
 	pid_t pid;
 	while(1)
 	{
-		if((accept_conn = accept(sockfd,(struct sockaddr*)&cliaddr,&cliaddr_len)) < 0)
-		ERR_EXIT("accept() error.");
-		printf("recived connect ip:%s port:%d\n",inet_ntoa(cliaddr.sin_addr),ntohs(cliaddr.sin_port));
-	
 		pid = fork();
 		if(pid == -1)
 			ERR_EXIT("fork error");
@@ -71,11 +72,14 @@ int main(int argc,char* argv[])
 			char sendbuf[1024] = {0};
 			while(fgets(sendbuf,sizeof(sendbuf),stdin) != NULL)
 			{
-				write(accept_conn,sendbuf,sizeof(sendbuf));
+				int ret = write(accept_conn,sendbuf,sizeof(sendbuf));
+				if(ret < 0)
+					break;
 				memset(sendbuf,0,sizeof(sendbuf));
 			}
 
 			kill(pid,SIGUSR1);
+			close(sockfd);
 			exit(EXIT_SUCCESS);
 		}
 	}
@@ -93,6 +97,7 @@ void do_service(int accept_conn,pid_t pid)
 		if(ret == 0)
 		{
 			printf("client close\n");
+			close(accept_conn);
 			break;
 		}
 		else if(ret == -1)
